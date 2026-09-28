@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trending Feed & Live Social Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- PrismJS for Backend Code Visualizer -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f5f3ff',
+                            400: '#a78bfa',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            neon: '#c084fc',
+                            accent: '#ec4899'
+                        },
+                        dark: {
+                            950: '#090d16',
+                            900: '#0f172a',
+                            850: '#131c31',
+                            800: '#1e293b',
+                            700: '#334155'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Outfit', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #090d16;
+            color: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-panel-hover:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: 0 8px 32px -4px rgba(139, 92, 246, 0.15);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #a78bfa 0%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #8b5cf6;
+        }
+        pre[class*="language-"] {
+            margin: 0;
+            border-radius: 0.75rem;
+            background: #0b0f19 !important;
+        }
+    </style>
+</head>
+<body class="bg-dark-950 text-slate-100 min-h-screen custom-scrollbar selection:bg-brand-500 selection:text-white">
+
+    <!-- Firebase App Modules -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, onSnapshot, addDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase state initialization
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'live-trending-hub';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                apiKey: "demo-key",
+                authDomain: "demo.firebaseapp.com",
+                projectId: "demo-project",
+                storageBucket: "demo.appspot.com",
+                messagingSenderId: "123456789",
+                appId: "1:123456789:web:12345"
+            };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.db = db;
+        window.auth = auth;
+        window.appId = appId;
+
+        // Firebase Auth initialization
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.warn("Auth initialization fallback:", err);
+            }
+        }
+
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.currentUserUid = user.uid;
+                window.dispatchEvent(new CustomEvent('firebaseAuthReady', { detail: { uid: user.uid } }));
+            }
+        });
+    </script>
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-40 w-full glass-panel border-b border-slate-800/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-400 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-brand-500/25">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div>
+                    <span class="font-heading font-extrabold text-xl tracking-tight text-white block leading-none">TREND<span class="text-brand-400">HUB</span></span>
+                    <span class="text-[10px] tracking-widest text-slate-400 uppercase font-semibold">Live Social & Trends</span>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="hidden md:flex items-center space-x-1 bg-dark-900/80 p-1 rounded-xl border border-slate-800">
+                <button onclick="switchTab('feed')" id="navFeedBtn" class="nav-btn active px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-brand-600 text-white shadow">
+                    <i class="fa-solid fa-fire mr-1.5"></i> Trends & Famosos
+                </button>
+                <button onclick="switchTab('search')" id="navSearchBtn" class="nav-btn px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-magnifying-glass mr-1.5"></i> Explorar Perfis
+                </button>
+                <button onclick="switchTab('backend')" id="navBackendBtn" class="nav-btn px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-code mr-1.5"></i> Arquitetura Multi-Lang
+                </button>
+            </nav>
+
+            <!-- User Status / Onboarding Badge -->
+            <div class="flex items-center gap-3">
+                <div id="userBadge" class="hidden items-center gap-2.5 bg-dark-850 border border-slate-800 px-3 py-1.5 rounded-full">
+                    <div class="relative">
+                        <img id="userAvatarImg" src="" class="w-7 h-7 rounded-full object-cover border border-brand-500">
+                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-dark-850 rounded-full"></span>
+                    </div>
+                    <div class="text-left">
+                        <span id="userBadgeName" class="text-xs font-bold text-white block leading-tight">@username</span>
+                        <span class="text-[9px] text-emerald-400 font-medium">Conectado ao vivo</span>
+                    </div>
+                    <button onclick="openOnboardingModal()" class="text-slate-400 hover:text-brand-400 text-xs ml-1" title="Trocar Apelido">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                </div>
+
+                <button id="btnConnectUser" onclick="openOnboardingModal()" class="bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md shadow-brand-500/20 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i> Criar Apelido
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container Layout -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- TAB 1: Live Feed & Trending Hub -->
+        <section id="tabFeed" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left Sidebar: Famous Trending Profiles -->
+            <aside class="lg:col-span-3 space-y-6">
+                <div class="glass-panel rounded-2xl p-5 border border-slate-800">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-heading font-bold text-sm text-white flex items-center gap-2">
+                            <i class="fa-solid fa-star text-amber-400"></i> Famosos em Alta
+                        </h3>
+                        <span class="text-[10px] bg-brand-500/20 text-brand-400 px-2 py-0.5 rounded-full font-bold uppercase">Ao Vivo</span>
+                    </div>
+
+                    <div id="famousProfilesList" class="space-y-3.5">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+
+                <!-- Trending Topics Widget -->
+                <div class="glass-panel rounded-2xl p-5 border border-slate-800">
+                    <h3 class="font-heading font-bold text-sm text-white mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-hashtag text-brand-400"></i> Asuntos do Momento
+                    </h3>
+                    <div class="space-y-3 text-xs">
+                        <div class="flex justify-between items-center group cursor-pointer hover:bg-slate-800/40 p-1.5 rounded-lg transition">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">Música & Pop · Tendência</span>
+                                <span class="font-bold text-slate-200 group-hover:text-brand-400">#AnittaWorldTour</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500">142k posts</span>
+                        </div>
+                        <div class="flex justify-between items-center group cursor-pointer hover:bg-slate-800/40 p-1.5 rounded-lg transition">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">Tecnologia · Tendência</span>
+                                <span class="font-bold text-slate-200 group-hover:text-brand-400">#AI_Revolution</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500">98k posts</span>
+                        </div>
+                        <div class="flex justify-between items-center group cursor-pointer hover:bg-slate-800/40 p-1.5 rounded-lg transition">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">Esportes · Tendência</span>
+                                <span class="font-bold text-slate-200 group-hover:text-brand-400">#NeymarJr</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500">65k posts</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Middle Column: Main Feed Posts -->
+            <div class="lg:col-span-6 space-y-6">
+                
+                <!-- Quick Community Broadcast / Post Banner -->
+                <div class="glass-panel rounded-2xl p-4 border border-slate-800 flex items-center gap-3">
+                    <img id="postBoxAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Guest" class="w-10 h-10 rounded-full border border-slate-700">
+                    <div class="flex-1">
+                        <button onclick="openOnboardingModal()" class="w-full text-left bg-dark-900 border border-slate-800 hover:border-brand-500/50 text-slate-400 text-xs rounded-xl px-4 py-2.5 transition">
+                            O que está acontecendo sobre as celebridades e tendências?
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Feed Posts Container -->
+                <div id="postsFeedContainer" class="space-y-6">
+                    <!-- Dynamic Posts rendered via JS -->
+                </div>
+            </div>
+
+            <!-- Right Sidebar: Live Social Activity Stats -->
+            <aside class="lg:col-span-3 space-y-6">
+                <div class="glass-panel rounded-2xl p-5 border border-slate-800">
+                    <h3 class="font-heading font-bold text-sm text-white mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-users text-emerald-400"></i> Atividade da Comunidade
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-4">Pessoas conectadas comentando em tempo real.</p>
+                    
+                    <div id="recentActivityList" class="space-y-3 text-xs">
+                        <div class="flex items-center gap-2 text-slate-400 italic">
+                            <i class="fa-solid fa-spinner fa-spin text-brand-400"></i> Carregando comentários ao vivo...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-5 rounded-2xl border border-brand-500/20 bg-gradient-to-br from-brand-900/10 to-transparent">
+                    <h4 class="font-heading font-bold text-xs text-brand-400 uppercase tracking-wider mb-2">Engajamento Global</h4>
+                    <p class="text-xs text-slate-300 leading-relaxed mb-3">Qualquer comentário ou reação é transmitido via Firebase Firestore instantaneamente para todos os usuários ativos.</p>
+                    <div class="flex items-center gap-2 text-[11px] text-emerald-400 font-semibold">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> Sincronização Ativa
+                    </div>
+                </div>
+            </aside>
+        </section>
+
+        <!-- TAB 2: Famous Profiles Explorer -->
+        <section id="tabSearch" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl border border-slate-800">
+                <h2 class="font-heading font-bold text-2xl text-white mb-2">Explorar Perfis & Tendências</h2>
+                <p class="text-xs text-slate-400 max-w-2xl mb-6">Encontre celebridades, criadores de conteúdo e tópicos mais falados com métricas de engajamento.</p>
+
+                <div class="relative max-w-md mb-8">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-slate-400 text-sm"></i>
+                    <input type="text" id="searchProfilesInput" onkeyup="filterProfiles()" placeholder="Buscar por nome, @username ou categoria..." class="w-full bg-dark-900 border border-slate-800 rounded-xl pl-11 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                </div>
+
+                <div id="profilesExplorerGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: Multi-Language Backend Architecture Code Panel -->
+        <section id="tabBackend" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 sm:p-8 rounded-2xl border border-slate-800">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <span class="text-xs font-bold text-brand-400 uppercase tracking-wider">Arquitetura de Tempo Real</span>
+                        <h2 class="font-heading font-bold text-2xl sm:text-3xl text-white mt-1">Backend Multi-Linguagem & APIs</h2>
+                        <p class="text-xs text-slate-400 mt-1 max-w-2xl">
+                            Demonstração de como os serviços de tempo real, validação de apelidos e websocket de notificações seriam estruturados em Python, C#, Java e JavaScript.
+                        </p>
+                    </div>
+
+                    <!-- Language Switcher Tabs -->
+                    <div class="flex bg-dark-900 p-1 rounded-xl border border-slate-800 gap-1 self-start">
+                        <button onclick="switchCodeLang('python')" id="codeBtnPython" class="code-lang-btn active bg-brand-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">Python (FastAPI)</button>
+                        <button onclick="switchCodeLang('csharp')" id="codeBtnCsharp" class="code-lang-btn text-slate-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">C# (.NET SignalR)</button>
+                        <button onclick="switchCodeLang('java')" id="codeBtnJava" class="code-lang-btn text-slate-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">Java (Spring Boot)</button>
+                        <button onclick="switchCodeLang('html')" id="codeBtnHtml" class="code-lang-btn text-slate-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">HTML5 / JS Client</button>
+                    </div>
+                </div>
+
+                <!-- Python Snippet -->
+                <div id="codeSnippetPython" class="code-block-container">
+                    <div class="flex justify-between items-center bg-dark-900 px-4 py-2 rounded-t-xl border border-slate-800 text-xs text-slate-400">
+                        <span><i class="fa-brands fa-python text-amber-400 mr-2"></i>server.py (FastAPI + WebSockets)</span>
+                        <button onclick="copyCode('pythonCodeText')" class="hover:text-white"><i class="fa-regular fa-copy"></i> Copiar</button>
+                    </div>
+                    <pre><code id="pythonCodeText" class="language-python">from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from pydantic import BaseModel
+import asyncio
+
+app = FastAPI(title="Live Social Hub Backend")
+
+# In-memory storage for active users and username validation
+registered_usernames = set(["casimiro", "virginia", "neymarjr", "marina"])
+active_connections: list[WebSocket] = []
+
+class UsernameCheck(BaseModel):
+    username: str
+
+@app.post("/api/v1/users/check-username")
+async def check_username(data: UsernameCheck):
+    """Verifica se o apelido/username já está em uso"""
+    clean_name = data.username.strip().lower()
+    if clean_name in registered_usernames:
+        return {"available": False, "message": "Apelido já em uso."}
+    return {"available": True, "message": "Apelido disponível!"}
+
+@app.websocket("/ws/comments")
+async def comments_websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint para streaming de comentários em tempo real"""
+    await websocket.accept()
+    active_connections.append(websocket)
+    try:
+        while True:
+            # Recebe novo comentário com texto e imagem anexa em JSON
+            payload = await websocket.receive_json()
+            
+            # Broadcast para todos os usuários conectados
+            for connection in active_connections:
+                await connection.send_json({
+                    "event": "NEW_COMMENT",
+                    "data": payload
+                })
+    except WebSocketDisconnect:
+        active_connections.remove(websocket)
+</code></pre>
+                </div>
+
+                <!-- C# Snippet -->
+                <div id="codeSnippetCsharp" class="code-block-container hidden">
+                    <div class="flex justify-between items-center bg-dark-900 px-4 py-2 rounded-t-xl border border-slate-800 text-xs text-slate-400">
+                        <span><i class="fa-custom fa-csharp text-purple-400 mr-2"></i>SocialHub.cs (.NET 8 SignalR Hub)</span>
+                        <button onclick="copyCode('csharpCodeText')" class="hover:text-white"><i class="fa-regular fa-copy"></i> Copiar</button>
+                    </div>
+                    <pre><code id="csharpCodeText" class="language-csharp">using Microsoft.AspNetCore.SignalR;
+using System.Collections.Concurrent;
+
+namespace SocialHub.Web.Hubs
+{
+    public class CommentPayload
+    {
+        public string PostId { get; set; }
+        public string AuthorName { get; set; }
+        public string Content { get; set; }
+        public string ImageUrl { get; set; }
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    }
+
+    public class TrendingSocialHub : Hub
+    {
+        private static readonly ConcurrentDictionary<string, string> ActiveUsernames = new();
+
+        public async Task<bool> ValidateUsername(string username)
+        {
+            var cleanName = username.Trim().ToLower();
+            if (ActiveUsernames.Values.Contains(cleanName))
+            {
+                return false; // Apelido ocupado
+            }
+            ActiveUsernames[Context.ConnectionId] = cleanName;
+            return true;
+        }
+
+        public async Task BroadcastComment(CommentPayload comment)
+        {
+            // Dispara evento em tempo real para todos os clientes ativos
+            await Clients.All.SendAsync("ReceiveLiveComment", comment);
+        }
+
+        public async Task ToggleReaction(string postId, string reactionType)
+        {
+            await Clients.All.SendAsync("UpdateReactionCount", postId, reactionType);
+        }
+    }
+}
+</code></pre>
+                </div>
+
+                <!-- Java Snippet -->
+                <div id="codeSnippetJava" class="code-block-container hidden">
+                    <div class="flex justify-between items-center bg-dark-900 px-4 py-2 rounded-t-xl border border-slate-800 text-xs text-slate-400">
+                        <span><i class="fa-brands fa-java text-orange-400 mr-2"></i>CommentController.java (Spring Boot REST Service)</span>
+                        <button onclick="copyCode('javaCodeText')" class="hover:text-white"><i class="fa-regular fa-copy"></i> Copiar</button>
+                    </div>
+                    <pre><code id="javaCodeText" class="language-java">package com.socialhub.trending.controller;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import java.util.*;
+
+@RestController
+@RequestMapping("/api/v1/social")
+@CrossOrigin(origins = "*")
+public class CommentController {
+
+    private final Set<String> registeredUsers = Collections.synchronizedSet(new HashSet<>());
+
+    @GetMapping("/users/validate/{username}")
+    public ResponseEntity<Map<String, Object>> validateUser(@PathVariable String username) {
+        String normalized = username.trim().toLowerCase();
+        boolean isAvailable = !registeredUsers.contains(normalized);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("username", normalized);
+        response.put("available", isAvailable);
+        
+        if (isAvailable) {
+            registeredUsers.add(normalized);
+        }
+        return ResponseEntity.ok(response);
+    }
+}
+</code></pre>
+                </div>
+
+                <!-- HTML5 / JS Snippet -->
+                <div id="codeSnippetHtml" class="code-block-container hidden">
+                    <div class="flex justify-between items-center bg-dark-900 px-4 py-2 rounded-t-xl border border-slate-800 text-xs text-slate-400">
+                        <span><i class="fa-brands fa-html5 text-orange-500 mr-2"></i>app.js (Realtime Web Client)</span>
+                        <button onclick="copyCode('htmlCodeText')" class="hover:text-white"><i class="fa-regular fa-copy"></i> Copiar</button>
+                    </div>
+                    <pre><code id="htmlCodeText" class="language-js">// Sincronização ao vivo com Firestore e Reações
+import { getFirestore, onSnapshot, collection, addDoc } from "firebase/firestore";
+
+const db = getFirestore();
+
+// Escutar comentários do post em tempo real
+function subscribeToComments(postId) {
+  const commentsRef = collection(db, 'artifacts', appId, 'public', 'data', `comments_${postId}`);
+  
+  onSnapshot(commentsRef, (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "added") {
+        renderNewComment(postId, change.doc.data());
+      }
+    });
+  });
+}
+</code></pre>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Onboarding / Username Registration Modal -->
+    <div id="onboardingModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-card bg-dark-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 relative shadow-2xl">
+            <button onclick="closeOnboardingModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="text-center mb-6">
+                <div class="w-14 h-14 bg-brand-600/20 text-brand-400 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 border border-brand-500/30">
+                    <i class="fa-solid fa-user-astronaut"></i>
+                </div>
+                <h3 class="font-heading font-bold text-xl text-white">Escolha Seu Apelido</h3>
+                <p class="text-xs text-slate-400 mt-1">Como você deseja ser identificado na rede social?</p>
+            </div>
+
+            <form onsubmit="handleUserRegistration(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nome de Exibição / @Username</label>
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-2.5 text-slate-500 text-sm font-bold">@</span>
+                        <input type="text" id="usernameInput" oninput="checkUsernameAvailability()" required placeholder="ex: casimiro_fan" class="w-full bg-dark-950 border border-slate-800 rounded-xl pl-8 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 font-medium">
+                        <div id="usernameStatusIcon" class="absolute right-3 top-3 text-xs hidden">
+                            <!-- Spinner / Check / Times -->
+                        </div>
+                    </div>
+                    <p id="usernameMessage" class="text-[11px] mt-1.5 h-4 font-medium text-slate-400">Digite um nome de 3 a 20 caracteres.</p>
+                </div>
+
+                <!-- Avatar Selection -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Escolha seu Avatar</label>
+                    <div class="flex items-center justify-between gap-2 p-2 bg-dark-950 rounded-xl border border-slate-800">
+                        <img id="previewAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Guest" class="w-10 h-10 rounded-full border border-brand-500">
+                        <div class="flex gap-2">
+                            <button type="button" onclick="changeAvatarSeed('bottts')" class="text-[10px] bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg text-slate-300">Robô</button>
+                            <button type="button" onclick="changeAvatarSeed('avataaars')" class="text-[10px] bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg text-slate-300">Pessoa</button>
+                            <button type="button" onclick="changeAvatarSeed('identicon')" class="text-[10px] bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg text-slate-300">Geométrico</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btnSaveUser" type="submit" disabled class="w-full bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-all text-xs shadow-lg shadow-brand-600/30">
+                    Confirmar e Acessar Rede
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Image Attachment Preview Modal for Comments -->
+    <div id="imagePreviewModal" class="fixed inset-0 z-50 bg-black/90 hidden items-center justify-center p-4">
+        <button onclick="closeImagePreview()" class="absolute top-4 right-4 text-white text-2xl">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <img id="fullSizeImagePreview" src="" class="max-w-full max-h-[90vh] rounded-2xl object-contain shadow-2xl">
+    </div>
+
+    <script>
+        // Data Store for Famous Profiles & Trending Posts
+        const famousProfiles = [
+            {
+                id: 'casimiro',
+                name: 'Casimiro Miguel',
+                handle: '@casimiro',
+                category: 'Streamer & Esportes',
+                avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+                verified: true,
+                followers: '4.8M',
+                bio: 'Meteu essa?! Reações, futebol e transmissões ao vivo.'
+            },
+            {
+                id: 'virginia',
+                name: 'Virginia Fonseca',
+                handle: '@virginia',
+                category: 'Lifestyle & Influenciadora',
+                avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+                verified: true,
+                followers: '46.2M',
+                bio: 'Sempre compartilhando a rotina, beleza e novidades!'
+            },
+            {
+                id: 'neymarjr',
+                name: 'Neymar Jr',
+                handle: '@neymarjr',
+                category: 'Atleta / Futebol',
+                avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+                verified: true,
+                followers: '220M',
+                bio: 'Ousadia e Alegria. Atleta profissional.'
+            },
+            {
+                id: 'marina',
+                name: 'Marina Ruy Barbosa',
+                handle: '@marinaruybarbosa',
+                category: 'Atriz & Moda',
+                avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80',
+                verified: true,
+                followers: '24.1M',
+                bio: 'Atriz, fundadora da Ginger e apaixonada por moda.'
+            }
+        ];
+
+        const initialPosts = [
+            {
+                id: 'post-1',
+                authorId: 'casimiro',
+                timestamp: Date.now() - 8 * 60 * 1000, // 8 minutes ago
+                content: 'Mano, inacreditável o que aconteceu nesse jogo de hoje! Quem não assistiu perdeu a maior reviravolta do ano. Assistam o corte no canal oficial! ⚽🔥',
+                mediaUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=800&q=80',
+                likes: 1420,
+                reactions: { heart: 820, fire: 450, wow: 150 },
+                userReacted: false
+            },
+            {
+                id: 'post-2',
+                authorId: 'virginia',
+                timestamp: Date.now() - 42 * 60 * 1000, // 42 minutes ago
+                content: 'Bom dia pessoal!! Batemos mais um recorde na live de hoje. Só tenho a agradecer a cada um de vocês pelo carinho imenso! ❤️✨',
+                mediaUrl: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
+                likes: 8930,
+                reactions: { heart: 6100, fire: 2200, wow: 630 },
+                userReacted: false
+            },
+            {
+                id: 'post-3',
+                authorId: 'neymarjr',
+                timestamp: Date.now() - 3 * 60 * 60 * 1000, // 3 hours ago
+                content: 'Treino pesado finalizado com sucesso. Foco total nos próximos desafios da temporada! 🤜🤛',
+                mediaUrl: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=800&q=80',
+                likes: 12500,
+                reactions: { heart: 9400, fire: 2800, clap: 300 },
+                userReacted: false
+            }
+        ];
+
+        // User State
+        let currentUser = null;
+        let selectedAvatarStyle = 'bottts';
+        let currentAvatarSeed = 'Guest_' + Math.floor(Math.random() * 1000);
+        let pendingCommentImage = {}; // map of postId -> base64/URL
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLocalUser();
+            renderFamousProfiles();
+            renderFeedPosts();
+            renderProfilesExplorer();
+
+            // Set up interval for dynamic relative time updates
+            setInterval(updateRelativeTimes, 30000);
+
+            window.addEventListener('firebaseAuthReady', () => {
+                listenToLiveComments();
+            });
+        });
+
+        // Tab Switching Logic
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-brand-600', 'text-white', 'shadow');
+                btn.classList.add('text-slate-400');
+            });
+
+            if (tabName === 'feed') {
+                document.getElementById('tabFeed').classList.remove('hidden');
+                document.getElementById('navFeedBtn').classList.add('active', 'bg-brand-600', 'text-white', 'shadow');
+            } else if (tabName === 'search') {
+                document.getElementById('tabSearch').classList.remove('hidden');
+                document.getElementById('navSearchBtn').classList.add('active', 'bg-brand-600', 'text-white', 'shadow');
+            } else if (tabName === 'backend') {
+                document.getElementById('tabBackend').classList.remove('hidden');
+                document.getElementById('navBackendBtn').classList.add('active', 'bg-brand-600', 'text-white', 'shadow');
+            }
+        }
+
+        // Onboarding & Local User Management
+        function loadLocalUser() {
+            const saved = localStorage.getItem('social_hub_user');
+            if (saved) {
+                currentUser = JSON.parse(saved);
+                updateUserUI();
+            } else {
+                openOnboardingModal();
+            }
+        }
+
+        function updateUserUI() {
+            if (!currentUser) return;
+            document.getElementById('userBadge').classList.remove('hidden');
+            document.getElementById('userBadge').classList.add('flex');
+            document.getElementById('btnConnectUser').classList.add('hidden');
+            document.getElementById('userBadgeName').innerText = `@${currentUser.username}`;
+            document.getElementById('userAvatarImg').src = currentUser.avatar;
+            document.getElementById('postBoxAvatar').src = currentUser.avatar;
+        }
+
+        function openOnboardingModal() {
+            document.getElementById('onboardingModal').classList.remove('hidden');
+        }
+
+        function closeOnboardingModal() {
+            if (currentUser) {
+                document.getElementById('onboardingModal').classList.add('hidden');
+            }
+        }
+
+        function changeAvatarSeed(style) {
+            selectedAvatarStyle = style;
+            currentAvatarSeed = 'User_' + Math.floor(Math.random() * 9999);
+            const url = `https://api.dicebear.com/7.x/${selectedAvatarStyle}/svg?seed=${currentAvatarSeed}`;
+            document.getElementById('previewAvatar').src = url;
+        }
+
+        // Check Username Availability via Firestore
+        let checkDebounce = null;
+        async function checkUsernameAvailability() {
+            clearTimeout(checkDebounce);
+            const input = document.getElementById('usernameInput');
+            const statusIcon = document.getElementById('usernameStatusIcon');
+            const msg = document.getElementById('usernameMessage');
+            const btn = document.getElementById('btnSaveUser');
+
+            const val = input.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+            input.value = val;
+
+            if (val.length < 3) {
+                msg.innerText = "Apelido deve ter pelo menos 3 caracteres.";
+                msg.className = "text-[11px] mt-1.5 h-4 font-medium text-amber-400";
+                statusIcon.classList.add('hidden');
+                btn.disabled = true;
+                return;
+            }
+
+            statusIcon.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-brand-400"></i>`;
+            statusIcon.classList.remove('hidden');
+
+            checkDebounce = setTimeout(async () => {
+                try {
+                    const isTaken = await isUsernameTakenInFirestore(val);
+                    if (isTaken) {
+                        msg.innerText = `O apelido @${val} já está em uso por outro usuário.`;
+                        msg.className = "text-[11px] mt-1.5 h-4 font-medium text-rose-400";
+                        statusIcon.innerHTML = `<i class="fa-solid fa-xmark text-rose-500"></i>`;
+                        btn.disabled = true;
+                    } else {
+                        msg.innerText = `O apelido @${val} está disponível!`;
+                        msg.className = "text-[11px] mt-1.5 h-4 font-medium text-emerald-400";
+                        statusIcon.innerHTML = `<i class="fa-solid fa-check text-emerald-500"></i>`;
+                        btn.disabled = false;
+                    }
+                } catch (e) {
+                    btn.disabled = false; // fallback allow
+                }
+            }, 400);
+        }
+
+        async function isUsernameTakenInFirestore(username) {
+            if (!window.db || !window.appId) return false;
+
+            // Check famous profiles first
+            if (famousProfiles.some(p => p.handle.toLowerCase() === `@${username}`)) {
+                return true;
+            }
+
+            try {
+                const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                const usersRef = collection(window.db, 'artifacts', window.appId, 'public', 'data', 'profiles');
+                const snapshot = await getDocs(usersRef);
+                let taken = false;
+                snapshot.forEach(doc => {
+                    if (doc.data().username === username && doc.data().uid !== window.currentUserUid) {
+                        taken = true;
+                    }
+                });
+                return taken;
+            } catch (err) {
+                console.warn("Firestore check failed:", err);
+                return false;
+            }
+        }
+
+        async function handleUserRegistration(e) {
+            e.preventDefault();
+            const username = document.getElementById('usernameInput').value.trim().toLowerCase();
+            const avatar = document.getElementById('previewAvatar').src;
+
+            currentUser = {
+                username,
+                avatar,
+                createdAt: Date.now()
+            };
+
+            localStorage.setItem('social_hub_user', JSON.stringify(currentUser));
+            updateUserUI();
+
+            // Save to Firestore
+            if (window.db && window.appId) {
+                try {
+                    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                    const userDoc = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'profiles', username);
+                    await setDoc(userDoc, {
+                        username,
+                        avatar,
+                        uid: window.currentUserUid || 'anon',
+                        lastSeen: Date.now()
+                    }, { merge: true });
+                } catch (e) {
+                    console.warn("User firestore save error:", e);
+                }
+            }
+
+            document.getElementById('onboardingModal').classList.add('hidden');
+        }
+
+        // Render Famous Sidebar Profiles
+        function renderFamousProfiles() {
+            const container = document.getElementById('famousProfilesList');
+            if (!container) return;
+
+            container.innerHTML = famousProfiles.map(p => `
+                <div class="flex items-center justify-between group p-1.5 rounded-xl hover:bg-slate-800/40 transition">
+                    <div class="flex items-center gap-2.5">
+                        <img src="${p.avatar}" class="w-9 h-9 rounded-full object-cover border border-slate-700">
+                        <div>
+                            <div class="flex items-center gap-1">
+                                <span class="font-bold text-xs text-white group-hover:text-brand-400 transition">${p.name}</span>
+                                ${p.verified ? '<i class="fa-solid fa-circle-check text-brand-400 text-[10px]"></i>' : ''}
+                            </div>
+                            <span class="text-[10px] text-slate-400 block">${p.handle}</span>
+                        </div>
+                    </div>
+                    <span class="text-[10px] bg-slate-800 text-slate-300 font-semibold px-2 py-1 rounded-lg">${p.followers}</span>
+                </div>
+            `).join('');
+        }
+
+        // Render Main Posts
+        function renderFeedPosts() {
+            const container = document.getElementById('postsFeedContainer');
+            if (!container) return;
+
+            container.innerHTML = initialPosts.map(post => {
+                const author = famousProfiles.find(p => p.id === post.authorId) || famousProfiles[0];
+                const timeAgoStr = formatRelativeTime(post.timestamp);
+
+                return `
+                <article class="glass-panel glass-panel-hover rounded-2xl p-5 border border-slate-800 transition-all duration-300" id="post-card-${post.id}">
+                    <!-- Post Header -->
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <img src="${author.avatar}" class="w-10 h-10 rounded-full object-cover border border-brand-500/50">
+                            <div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="font-bold text-sm text-white">${author.name}</span>
+                                    ${author.verified ? '<i class="fa-solid fa-circle-check text-brand-400 text-xs"></i>' : ''}
+                                    <span class="text-xs text-slate-400">${author.handle}</span>
+                                </div>
+                                <span class="text-[10px] text-slate-500 font-medium tracking-wide">
+                                    <i class="fa-regular fa-clock mr-1"></i><span class="post-time-ago" data-time="${post.timestamp}">${timeAgoStr}</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <button class="text-slate-400 hover:text-white text-xs">
+                            <i class="fa-solid fa-ellipsis"></i>
+                        </button>
+                    </div>
+
+                    <!-- Content -->
+                    <p class="text-xs sm:text-sm text-slate-200 leading-relaxed mb-3">${post.content}</p>
+
+                    <!-- Media Attachment -->
+                    ${post.mediaUrl ? `
+                        <div class="rounded-xl overflow-hidden mb-4 border border-slate-800/80 max-h-96">
+                            <img src="${post.mediaUrl}" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500 cursor-pointer" onclick="showImagePreview('${post.mediaUrl}')">
+                        </div>
+                    ` : ''}
+
+                    <!-- Engagement Bar & Reactions -->
+                    <div class="flex items-center justify-between py-2 border-y border-slate-800/80 mb-4 text-xs">
+                        <div class="flex items-center gap-4">
+                            <!-- Like Button -->
+                            <button onclick="togglePostLike('${post.id}')" id="like-btn-${post.id}" class="flex items-center gap-1.5 text-slate-400 hover:text-rose-500 font-medium transition">
+                                <i class="fa-regular fa-heart text-sm"></i>
+                                <span id="like-count-${post.id}">${post.likes}</span>
+                            </button>
+
+                            <!-- Comment Count -->
+                            <div class="flex items-center gap-1.5 text-slate-400 font-medium">
+                                <i class="fa-regular fa-comment text-sm"></i>
+                                <span id="comment-count-${post.id}">0</span>
+                            </div>
+                        </div>
+
+                        <!-- Quick Reactions Bar -->
+                        <div class="flex items-center gap-1 bg-dark-950 px-2 py-1 rounded-full border border-slate-800">
+                            <button onclick="addPostReaction('${post.id}', 'heart')" class="hover:scale-125 transition">❤️</button>
+                            <button onclick="addPostReaction('${post.id}', 'fire')" class="hover:scale-125 transition">🔥</button>
+                            <button onclick="addPostReaction('${post.id}', 'wow')" class="hover:scale-125 transition">😮</button>
+                            <button onclick="addPostReaction('${post.id}', 'clap')" class="hover:scale-125 transition">👏</button>
+                        </div>
+                    </div>
+
+                    <!-- Live Realtime Comments Thread -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-300">Comentários ao Vivo</span>
+                            <span class="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Firebase Sync
+                            </span>
+                        </div>
+
+                        <!-- Comments Input Form with Image Upload -->
+                        <form onsubmit="submitComment(event, '${post.id}')" class="space-y-2">
+                            <div class="flex gap-2 items-center">
+                                <input type="text" id="input-comment-${post.id}" placeholder="Escreva um comentário público..." class="flex-1 bg-dark-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+                                
+                                <!-- File Upload Button -->
+                                <label class="cursor-pointer bg-dark-950 border border-slate-800 hover:border-brand-500 text-slate-400 hover:text-brand-400 p-2 rounded-xl text-xs flex items-center justify-center transition" title="Anexar Imagem">
+                                    <i class="fa-solid fa-paperclip"></i>
+                                    <input type="file" accept="image/*" onchange="handleCommentImageUpload(event, '${post.id}')" class="hidden">
+                                </label>
+
+                                <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+                            </div>
+
+                            <!-- Preview of Attached Image -->
+                            <div id="image-preview-container-${post.id}" class="hidden relative inline-block">
+                                <img id="image-preview-img-${post.id}" src="" class="w-16 h-16 rounded-lg object-cover border border-brand-500">
+                                <button type="button" onclick="removeCommentImage('${post.id}')" class="absolute -top-1.5 -right-1.5 bg-rose-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[9px]">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Comments Container -->
+                        <div id="comments-list-${post.id}" class="space-y-2.5 max-h-60 overflow-y-auto custom-scrollbar pt-1">
+                            <div class="text-[11px] text-slate-500 italic">Nenhum comentário ainda. Seja o primeiro!</div>
+                        </div>
+                    </div>
+                </article>
+                `;
+            }).join('');
+        }
+
+        // Handle Image Attachment for Comment
+        function handleCommentImageUpload(e, postId) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                pendingCommentImage[postId] = evt.target.result;
+                const previewCont = document.getElementById(`image-preview-container-${postId}`);
+                const previewImg = document.getElementById(`image-preview-img-${postId}`);
+                if (previewCont && previewImg) {
+                    previewImg.src = evt.target.result;
+                    previewCont.classList.remove('hidden');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeCommentImage(postId) {
+            delete pendingCommentImage[postId];
+            const previewCont = document.getElementById(`image-preview-container-${postId}`);
+            if (previewCont) previewCont.classList.add('hidden');
+        }
+
+        // Firebase Realtime Comment Listeners
+        function listenToLiveComments() {
+            if (!window.db || !window.appId) return;
+
+            initialPosts.forEach(post => {
+                try {
+                    import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").then(({ collection, onSnapshot, query }) => {
+                        const commentsRef = collection(window.db, 'artifacts', window.appId, 'public', 'data', `comments_${post.id}`);
+                        
+                        onSnapshot(commentsRef, (snapshot) => {
+                            const comments = [];
+                            snapshot.forEach(doc => {
+                                comments.push({ id: doc.id, ...doc.data() });
+                            });
+
+                            // Sort chronologically
+                            comments.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                            renderPostComments(post.id, comments);
+                            updateSidebarActivity(comments);
+                        }, (err) => {
+                            console.warn("Snapshot error:", err);
+                        });
+                    });
+                } catch (err) {
+                    console.warn("Firebase snapshot error:", err);
+                }
+            });
+        }
+
+        function renderPostComments(postId, comments) {
+            const container = document.getElementById(`comments-list-${postId}`);
+            const countEl = document.getElementById(`comment-count-${postId}`);
+            if (!container) return;
+
+            if (countEl) countEl.innerText = comments.length;
+
+            if (comments.length === 0) {
+                container.innerHTML = `<div class="text-[11px] text-slate-500 italic">Nenhum comentário ainda. Seja o primeiro a opinar!</div>`;
+                return;
+            }
+
+            container.innerHTML = comments.map(c => `
+                <div class="bg-dark-950/70 p-2.5 rounded-xl border border-slate-800/80 text-xs space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <img src="${c.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=Anon'}" class="w-5 h-5 rounded-full object-cover">
+                            <span class="font-bold text-white">@${c.author || 'anon'}</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500">${formatRelativeTime(c.timestamp)}</span>
+                    </div>
+
+                    <p class="text-slate-300 leading-snug pl-7">${c.text}</p>
+
+                    ${c.imageUrl ? `
+                        <div class="pl-7 pt-1">
+                            <img src="${c.imageUrl}" class="w-28 h-20 rounded-lg object-cover border border-slate-800 cursor-pointer hover:scale-105 transition" onclick="showImagePreview('${c.imageUrl}')">
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        async function submitComment(e, postId) {
+            e.preventDefault();
+            if (!currentUser) {
+                openOnboardingModal();
+                return;
+            }
+
+            const input = document.getElementById(`input-comment-${postId}`);
+            const text = input.value.trim();
+            const imageUrl = pendingCommentImage[postId] || null;
+
+            if (!text && !imageUrl) return;
+
+            const commentData = {
+                postId,
+                author: currentUser.username,
+                avatar: currentUser.avatar,
+                text,
+                imageUrl,
+                timestamp: Date.now()
+            };
+
+            // Clear input
+            input.value = '';
+            removeCommentImage(postId);
+
+            // Save to Firestore
+            if (window.db && window.appId) {
+                try {
+                    const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                    const commentsRef = collection(window.db, 'artifacts', window.appId, 'public', 'data', `comments_${postId}`);
+                    await addDoc(commentsRef, commentData);
+                } catch (err) {
+                    console.error("Error submitting comment:", err);
+                }
+            }
+        }
+
+        function updateSidebarActivity(comments) {
+            const container = document.getElementById('recentActivityList');
+            if (!container || comments.length === 0) return;
+
+            const latest = comments.slice(0, 4);
+            container.innerHTML = latest.map(c => `
+                <div class="bg-dark-900/80 p-2 rounded-xl border border-slate-800 flex items-center gap-2">
+                    <img src="${c.avatar}" class="w-6 h-6 rounded-full">
+                    <div class="truncate flex-1">
+                        <span class="font-bold text-white text-[11px]">@${c.author}</span>
+                        <p class="text-slate-400 text-[10px] truncate">${c.text}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Post Likes & Reactions
+        function togglePostLike(postId) {
+            const post = initialPosts.find(p => p.id === postId);
+            if (!post) return;
+
+            const likeBtn = document.getElementById(`like-btn-${postId}`);
+            const countEl = document.getElementById(`like-count-${postId}`);
+
+            if (!post.userReacted) {
+                post.likes++;
+                post.userReacted = true;
+                likeBtn.classList.add('text-rose-500');
+            } else {
+                post.likes--;
+                post.userReacted = false;
+                likeBtn.classList.remove('text-rose-500');
+            }
+            countEl.innerText = post.likes;
+        }
+
+        function addPostReaction(postId, type) {
+            const post = initialPosts.find(p => p.id === postId);
+            if (post) {
+                post.likes++;
+                document.getElementById(`like-count-${postId}`).innerText = post.likes;
+            }
+        }
+
+        // Profiles Explorer Page
+        function renderProfilesExplorer() {
+            const container = document.getElementById('profilesExplorerGrid');
+            if (!container) return;
+
+            container.innerHTML = famousProfiles.map(p => `
+                <div class="glass-card rounded-2xl p-5 border border-slate-800 flex flex-col justify-between hover:border-brand-500/50 transition">
+                    <div>
+                        <div class="flex items-center gap-3 mb-3">
+                            <img src="${p.avatar}" class="w-12 h-12 rounded-full object-cover border-2 border-brand-500">
+                            <div>
+                                <h4 class="font-bold text-white text-sm flex items-center gap-1">
+                                    ${p.name}
+                                    ${p.verified ? '<i class="fa-solid fa-circle-check text-brand-400 text-xs"></i>' : ''}
+                                </h4>
+                                <span class="text-xs text-slate-400">${p.handle}</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-300 mb-4 leading-relaxed">${p.bio}</p>
+                    </div>
+
+                    <div class="flex items-center justify-between border-t border-slate-800 pt-3 text-xs">
+                        <span class="text-slate-400 font-medium">${p.followers} seguidores</span>
+                        <span class="bg-brand-500/20 text-brand-400 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase">${p.category}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterProfiles() {
+            const q = document.getElementById('searchProfilesInput').value.toLowerCase();
+            const filtered = famousProfiles.filter(p => p.name.toLowerCase().includes(q) || p.handle.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
+            
+            const container = document.getElementById('profilesExplorerGrid');
+            container.innerHTML = filtered.map(p => `
+                <div class="glass-card rounded-2xl p-5 border border-slate-800 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-3 mb-3">
+                            <img src="${p.avatar}" class="w-12 h-12 rounded-full object-cover border-2 border-brand-500">
+                            <div>
+                                <h4 class="font-bold text-white text-sm">${p.name}</h4>
+                                <span class="text-xs text-slate-400">${p.handle}</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-300 mb-4">${p.bio}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Multi-Language Code Switcher
+        function switchCodeLang(lang) {
+            document.querySelectorAll('.code-block-container').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.code-lang-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-brand-600', 'text-white');
+                btn.classList.add('text-slate-400');
+            });
+
+            if (lang === 'python') {
+                document.getElementById('codeSnippetPython').classList.remove('hidden');
+                document.getElementById('codeBtnPython').classList.add('active', 'bg-brand-600', 'text-white');
+            } else if (lang === 'csharp') {
+                document.getElementById('codeSnippetCsharp').classList.remove('hidden');
+                document.getElementById('codeBtnCsharp').classList.add('active', 'bg-brand-600', 'text-white');
+            } else if (lang === 'java') {
+                document.getElementById('codeSnippetJava').classList.remove('hidden');
+                document.getElementById('codeBtnJava').classList.add('active', 'bg-brand-600', 'text-white');
+            } else if (lang === 'html') {
+                document.getElementById('codeSnippetHtml').classList.remove('hidden');
+                document.getElementById('codeBtnHtml').classList.add('active', 'bg-brand-600', 'text-white');
+            }
+            if (window.Prism) Prism.highlightAll();
+        }
+
+        function copyCode(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text);
+        }
+
+        // Image Preview Handler
+        function showImagePreview(url) {
+            document.getElementById('fullSizeImagePreview').src = url;
+            document.getElementById('imagePreviewModal').classList.remove('hidden');
+            document.getElementById('imagePreviewModal').classList.add('flex');
+        }
+
+        function closeImagePreview() {
+            document.getElementById('imagePreviewModal').classList.add('hidden');
+            document.getElementById('imagePreviewModal').classList.remove('flex');
+        }
+
+        // Time Helper Utility
+        function formatRelativeTime(timestamp) {
+            if (!timestamp) return 'agora';
+            const diffMs = Date.now() - timestamp;
+            const mins = Math.floor(diffMs / (1000 * 60));
+            if (mins < 1) return 'agora mesmo';
+            if (mins < 60) return `há ${mins} min`;
+            const hours = Math.floor(mins / 60);
+            if (hours < 24) return `há ${hours}h`;
+            const days = Math.floor(hours / 24);
+            return `há ${days}d`;
+        }
+
+        function updateRelativeTimes() {
+            document.querySelectorAll('.post-time-ago').forEach(el => {
+                const ts = parseInt(el.getAttribute('data-time'));
+                if (ts) el.innerText = formatRelativeTime(ts);
+            });
+        }
+    </script>
+</body>
+</html>
