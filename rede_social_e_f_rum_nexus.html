@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus - Comunidade & Fórum em Tempo Real</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        },
+                        customBg: 'var(--custom-bg)',
+                        customCard: 'var(--custom-card)',
+                        customText: 'var(--custom-text)',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(107, 114, 128, 0.8);
+        }
+        /* Custom Dynamic Theme CSS variables */
+        :root {
+            --custom-bg: #f3f4f6;
+            --custom-card: #ffffff;
+            --custom-text: #111827;
+            --custom-accent: #6366f1;
+        }
+        .theme-custom {
+            background-color: var(--custom-bg) !important;
+            color: var(--custom-text) !important;
+        }
+        .theme-custom .bg-card-theme {
+            background-color: var(--custom-card) !important;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .dark .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans min-h-screen transition-colors duration-200 antialiased flex flex-col selection:bg-brand-500 selection:text-white">
+
+    <!-- AUTH MODAL (Login / Cadastro Obrigatório Inicial) -->
+    <div id="authModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-100 dark:border-gray-700 transform transition-all">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gradient-to-tr from-brand-600 to-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid fa-comments text-3xl text-white"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Bem-vindo ao Nexus</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Crie sua conta ou entre para interagir em tempo real</p>
+            </div>
+
+            <form id="authForm" onsubmit="handleAuth(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1">Nome de Usuário</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-3 top-3.5 text-gray-400"></i>
+                        <input type="text" id="authUsername" required placeholder="Ex: alex_dev" class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none dark:text-white text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1">Senha</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3 top-3.5 text-gray-400"></i>
+                        <input type="password" id="authPassword" required placeholder="••••••••" class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none dark:text-white text-sm">
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-lg shadow-brand-600/30 transition duration-150 flex items-center justify-center gap-2">
+                        <span>Entrar na Comunidade</span>
+                        <i class="fa-solid fa-arrow-right text-sm"></i>
+                    </button>
+                </div>
+            </form>
+            <p class="text-xs text-center text-gray-400 mt-4">Ao entrar, você aceita nossas diretrizes de convivência e moderação.</p>
+        </div>
+    </div>
+
+    <!-- HEADER BAR -->
+    <header class="sticky top-0 z-30 glass-panel border-b border-gray-200 dark:border-gray-800 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            
+            <!-- Left: Logo & Feed Toggle Menu Icon -->
+            <div class="flex items-center space-x-3">
+                <button onclick="switchView('feed')" title="Menu / Página Principal" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-gray-700 transition flex items-center gap-2 group">
+                    <i class="fa-solid fa-bars text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="font-bold hidden sm:inline text-gray-800 dark:text-white">Nexus</span>
+                </button>
+                <div id="brasiliaClock" class="hidden md:flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg-gray-100/80 dark:bg-gray-800/80 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700/50">
+                    <i class="fa-regular fa-clock text-brand-500"></i>
+                    <span id="clockTime">00:00:00 (GMT-3)</span>
+                </div>
+            </div>
+
+            <!-- Center: Search or Title -->
+            <div class="flex-1 max-w-md mx-4 hidden sm:block">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
+                    <input type="text" id="searchInput" oninput="filterPostsBySearch()" placeholder="Pesquisar posts, tópicos ou palavras-chave..." class="w-full pl-9 pr-4 py-2 text-sm bg-gray-100 dark:bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-brand-500 text-gray-900 dark:text-white placeholder-gray-400">
+                </div>
+            </div>
+
+            <!-- Right Controls: Feed, Profile, Review Modal Trigger -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                
+                <!-- Feedback / Rating Star Icon -->
+                <button onclick="toggleModal('feedbackModal')" title="Avaliar o Site" class="p-2.5 rounded-xl text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition relative">
+                    <i class="fa-solid fa-star text-lg"></i>
+                    <span class="absolute top-1 right-1 flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                    </span>
+                </button>
+
+                <!-- Profile Modal Icon -->
+                <button onclick="openProfileModal()" title="Meu Perfil" class="flex items-center gap-2 p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                    <img id="headerAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=User" alt="Avatar" class="w-8 h-8 rounded-lg bg-brand-100 border border-brand-300 dark:border-brand-600">
+                    <span id="headerUsername" class="text-sm font-semibold hidden md:inline text-gray-700 dark:text-gray-200">Usuário</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER WITH 3 COLUMNS -->
+    <main class="max-w-7xl mx-auto px-2 sm:px-4 py-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+        
+        <!-- ================= LEFT SIDEBAR (Tópicos & Canais) ================= -->
+        <aside class="lg:col-span-3 space-y-4">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700/60 sticky top-22">
+                <div class="flex items-center justify-between mb-4 px-1">
+                    <h3 class="font-bold text-gray-900 dark:text-white text-base flex items-center gap-2">
+                        <i class="fa-solid fa-hashtag text-brand-500"></i> Tópicos
+                    </h3>
+                    <button onclick="toggleModal('newTopicModal')" title="Sugerir/Criar Tópico" class="text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+                        <i class="fa-solid fa-plus"></i> Novo
+                    </button>
+                </div>
+
+                <nav class="space-y-1" id="topicListContainer">
+                    <!-- Topics dynamically rendered here -->
+                </nav>
+
+                <!-- Trending Topics Box -->
+                <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700/60">
+                    <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">Em Alta no Brasil</h4>
+                    <div class="space-y-2" id="trendingTopicsContainer">
+                        <!-- Dynamic trending -->
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ================= CENTER FEED (Publicações & Interações) ================= -->
+        <section class="lg:col-span-6 space-y-4">
+            
+            <!-- VIEW SELECTOR / TABS -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-1.5 shadow-sm border border-gray-200 dark:border-gray-700/60 flex items-center justify-between text-sm">
+                <div class="flex space-x-1 w-full">
+                    <button onclick="filterFeed('all')" id="tabAll" class="flex-1 py-2 rounded-xl font-medium transition text-center bg-brand-600 text-white">
+                        <i class="fa-solid fa-fire mr-1"></i> Em Destaque
+                    </button>
+                    <button onclick="filterFeed('recent')" id="tabRecent" class="flex-1 py-2 rounded-xl font-medium transition text-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <i class="fa-solid fa-clock mr-1"></i> Recentes
+                    </button>
+                </div>
+            </div>
+
+            <!-- CREATE POST BOX -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700/60">
+                <div class="flex items-start gap-3">
+                    <img id="createPostAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=User" class="w-10 h-10 rounded-xl bg-gray-100">
+                    <div class="flex-1">
+                        <textarea id="postContent" rows="3" placeholder="No que você está pensando? Compartilhe algo incrível..." class="w-full p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none dark:text-white text-sm resize-none"></textarea>
+                        
+                        <!-- Image Preview Box -->
+                        <div id="imagePreviewContainer" class="hidden relative mt-2 rounded-xl overflow-hidden max-h-60 border border-gray-200 dark:border-gray-700">
+                            <img id="imagePreview" src="" class="w-full object-cover">
+                            <button onclick="removeSelectedImage()" class="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full hover:bg-black/80">
+                                <i class="fa-solid fa-xmark text-xs"></i>
+                            </button>
+                        </div>
+
+                        <!-- Post options footer -->
+                        <div class="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                            <div class="flex items-center gap-2">
+                                <!-- Image Upload Trigger -->
+                                <label class="cursor-pointer p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition" title="Adicionar Imagem">
+                                    <i class="fa-regular fa-image text-lg text-emerald-500"></i>
+                                    <input type="file" id="postImageInput" accept="image/*" onchange="handleImageSelect(event)" class="hidden">
+                                </label>
+                                <!-- Category Selector -->
+                                <select id="postCategorySelect" class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-medium rounded-lg px-2.5 py-1.5 border-none focus:ring-1 focus:ring-brand-500">
+                                    <option value="Notícias">Notícias</option>
+                                    <option value="Hobbies">Hobbies</option>
+                                    <option value="Futebol">Futebol</option>
+                                    <option value="Tecnologia">Tecnologia</option>
+                                    <option value="Animes & Jogos">Animes & Jogos</option>
+                                    <option value="Música">Música</option>
+                                </select>
+                            </div>
+                            <button onclick="createNewPost()" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-md transition flex items-center gap-2">
+                                <span>Publicar</span>
+                                <i class="fa-solid fa-paper-plane text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- POSTS FEED CONTAINER -->
+            <div id="postsContainer" class="space-y-4">
+                <!-- Posts will be populated dynamically via JavaScript -->
+            </div>
+        </section>
+
+        <!-- ================= RIGHT SIDEBAR (Chat Privado / DMs) ================= -->
+        <aside class="lg:col-span-3 space-y-4">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700/60 sticky top-22">
+                <div class="flex items-center justify-between mb-4 px-1">
+                    <h3 class="font-bold text-gray-900 dark:text-white text-base flex items-center gap-2">
+                        <i class="fa-solid fa-paper-plane text-brand-500"></i> Bate-Papo Privado
+                    </h3>
+                    <button onclick="toggleModal('addContactModal')" title="Enviar convite" class="text-xs bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300 px-2 py-1 rounded-lg hover:bg-brand-100 font-medium transition">
+                        + Convite
+                    </button>
+                </div>
+
+                <!-- Invites Pending Banner -->
+                <div id="pendingInvitesSection" class="hidden mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                    <p class="text-xs font-semibold text-amber-800 dark:text-amber-300 mb-2">Convites de Amizade Pendentes:</p>
+                    <div id="pendingInvitesList" class="space-y-2"></div>
+                </div>
+
+                <!-- Chat Contacts List -->
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">Conversas / Amigos</p>
+                <div class="space-y-1 max-h-80 overflow-y-auto pr-1" id="chatContactsContainer">
+                    <!-- Contacts rendered here -->
+                </div>
+
+                <!-- ACTIVE CHAT BOX MODAL / EMBEDDED -->
+                <div id="activeChatWindow" class="hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span id="chatActiveStatus" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                            <span id="chatActiveUser" class="font-bold text-sm text-gray-900 dark:text-white">Usuário</span>
+                        </div>
+                        <button onclick="closeActiveChat()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                            <i class="fa-solid fa-xmark text-sm"></i>
+                        </button>
+                    </div>
+
+                    <!-- Chat Messages Log -->
+                    <div id="chatMessagesLog" class="h-48 overflow-y-auto bg-gray-50 dark:bg-gray-900/50 rounded-xl p-3 space-y-2 text-xs">
+                        <!-- Messages populate dynamically -->
+                    </div>
+
+                    <!-- Send Message Input -->
+                    <form onsubmit="sendPrivateMessage(event)" class="mt-2 flex gap-1.5">
+                        <input type="text" id="chatMessageInput" placeholder="Sua mensagem privativa..." class="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-none rounded-xl text-xs focus:ring-2 focus:ring-brand-500 dark:text-white">
+                        <button type="submit" class="p-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl transition">
+                            <i class="fa-solid fa-paper-plane text-xs"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- ================= PROFILE MODAL ================= -->
+    <div id="profileModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-user-gear text-brand-500"></i> Personalização de Perfil
+                </h3>
+                <button onclick="toggleModal('profileModal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="mt-4 space-y-4">
+                <!-- Avatar Preview and Upload -->
+                <div class="flex items-center gap-4">
+                    <img id="profileAvatarPreview" src="" class="w-16 h-16 rounded-2xl bg-gray-100 border-2 border-brand-500 object-cover">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Mudar Imagem de Perfil</label>
+                        <input type="file" id="profileAvatarInput" accept="image/*" onchange="updateProfileAvatar(event)" class="text-xs text-gray-500 dark:text-gray-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+                    </div>
+                </div>
+
+                <!-- Username & Bio -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Biografia / Descrição</label>
+                    <textarea id="profileBioInput" rows="3" placeholder="Escreva algo sobre você..." class="w-full p-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 dark:text-white resize-none"></textarea>
+                </div>
+
+                <!-- Theme Selection -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Tema da Interface</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setTheme('light')" class="p-3 border rounded-xl text-xs font-medium text-center hover:border-brand-500 flex flex-col items-center gap-1 bg-white text-gray-800">
+                            <i class="fa-solid fa-sun text-amber-500"></i> Claro
+                        </button>
+                        <button onclick="setTheme('dark')" class="p-3 border rounded-xl text-xs font-medium text-center hover:border-brand-500 flex flex-col items-center gap-1 bg-gray-900 text-white">
+                            <i class="fa-solid fa-moon text-indigo-400"></i> Escuro
+                        </button>
+                        <button onclick="setTheme('custom')" class="p-3 border rounded-xl text-xs font-medium text-center hover:border-brand-500 flex flex-col items-center gap-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                            <i class="fa-solid fa-palette"></i> Personalizável
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Custom Theme Controls -->
+                <div id="customThemeControls" class="hidden p-3 bg-gray-50 dark:bg-gray-700/40 rounded-xl space-y-2 border border-gray-200 dark:border-gray-600">
+                    <p class="text-xs font-semibold text-gray-600 dark:text-gray-300">Cores Customizadas:</p>
+                    <div class="flex items-center justify-between text-xs">
+                        <span>Fundo da Página:</span>
+                        <input type="color" id="colorBgPicker" value="#111827" onchange="applyCustomColors()">
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <span>Fundo do Card:</span>
+                        <input type="color" id="colorCardPicker" value="#1f2937" onchange="applyCustomColors()">
+                    </div>
+                </div>
+
+                <!-- Censorship Options -->
+                <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <label class="flex items-center justify-between cursor-pointer">
+                        <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">Filtro de Censura (Ocultar conteúdo sensível/NSFW)</span>
+                        <input type="checkbox" id="censorshipToggle" onchange="toggleCensorshipSetting()" class="w-4 h-4 text-brand-600 rounded focus:ring-brand-500">
+                    </label>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+                <button onclick="saveProfileChanges()" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-md transition">
+                    Salvar Perfil
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= FEEDBACK & RATING MODAL ================= -->
+    <div id="feedbackModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-star text-yellow-500"></i> Avaliação do Nexus
+                </h3>
+                <button onclick="toggleModal('feedbackModal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="mt-4 space-y-4">
+                <p class="text-xs text-gray-500 dark:text-gray-400">Deixe sua opinião e sugestão de melhoria para aperfeiçoar a comunidade!</p>
+                
+                <!-- Star Rating Picker -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Sua Nota:</label>
+                    <div class="flex gap-2 text-2xl text-yellow-400" id="starRatingContainer">
+                        <i class="fa-solid fa-star cursor-pointer hover:scale-110 transition" onclick="selectRating(1)"></i>
+                        <i class="fa-solid fa-star cursor-pointer hover:scale-110 transition" onclick="selectRating(2)"></i>
+                        <i class="fa-solid fa-star cursor-pointer hover:scale-110 transition" onclick="selectRating(3)"></i>
+                        <i class="fa-solid fa-star cursor-pointer hover:scale-110 transition" onclick="selectRating(4)"></i>
+                        <i class="fa-solid fa-star cursor-pointer hover:scale-110 transition" onclick="selectRating(5)"></i>
+                    </div>
+                </div>
+
+                <!-- Suggestion Input -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Sua Sugestão ou Comentário</label>
+                    <textarea id="feedbackText" rows="3" placeholder="O que você mais gostou ou o que podemos melhorar?" class="w-full p-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 dark:text-white resize-none"></textarea>
+                </div>
+
+                <button onclick="submitFeedback()" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm shadow-md transition">
+                    Enviar Avaliação
+                </button>
+
+                <!-- Submitted Feedbacks List -->
+                <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">Avaliações da Comunidade</h4>
+                    <div id="feedbackList" class="space-y-3 max-h-48 overflow-y-auto pr-1">
+                        <!-- Feedbacks list dynamically populated -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= NEW TOPIC MODAL ================= -->
+    <div id="newTopicModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-plus-circle text-brand-500"></i> Sugerir / Criar Tópico
+                </h3>
+                <button onclick="toggleModal('newTopicModal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="mt-4 space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Nome do Tópico</label>
+                    <input type="text" id="newTopicTitle" placeholder="Ex: Culinária, Ciência, Cinema..." class="w-full p-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Ícone (FontAwesome Class)</label>
+                    <input type="text" id="newTopicIcon" placeholder="fa-film, fa-flask, fa-utensils..." class="w-full p-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 dark:text-white">
+                </div>
+                <button onclick="createTopic()" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm shadow-md transition">
+                    Adicionar Tópico
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= ADD CONTACT MODAL ================= -->
+    <div id="addContactModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus text-brand-500"></i> Enviar Convite de Bate-papo
+                </h3>
+                <button onclick="toggleModal('addContactModal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="mt-4 space-y-3">
+                <p class="text-xs text-gray-500 dark:text-gray-400">Selecione ou insira o nome de usuário com quem deseja iniciar um papo privado:</p>
+                <div class="space-y-2" id="availableUsersToInvite">
+                    <!-- Suggested contacts -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APP STATE & LOGIC -->
+    <script>
+        // APP INITIAL STATE
+        let currentUser = null;
+        let selectedCategoryFilter = 'all'; // 'all', or specific topic name
+        let selectedPostImageBase64 = null;
+        let selectedRatingValue = 5;
+        let activeChatUserId = null;
+
+        // TOPICS INITIAL LIST
+        let topics = [
+            { id: 'noticias', name: 'Notícias', icon: 'fa-newspaper', count: 142 },
+            { id: 'hobbies', name: 'Hobbies', icon: 'fa-palette', count: 89 },
+            { id: 'futebol', name: 'Futebol', icon: 'fa-futbol', count: 310 },
+            { id: 'tecnologia', name: 'Tecnologia', icon: 'fa-laptop-code', count: 254 },
+            { id: 'animes', name: 'Animes & Jogos', icon: 'fa-gamepad', count: 412 },
+            { id: 'musica', name: 'Música', icon: 'fa-music', count: 97 }
+        ];
+
+        // MOCK USERS DATA FOR CHAT & INTERACTIONS
+        let usersData = [
+            { id: 'camila_m', name: 'Camila Mendes', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80', bio: 'Apaixonada por tecnologia e games 🎮', online: true, status: 'accepted' },
+            { id: 'lucas_s', name: 'Lucas Silva', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', bio: 'Torcedor e crítico de futebol ⚽', online: true, status: 'accepted' },
+            { id: 'beatriz_tech', name: 'Beatriz Costa', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80', bio: 'Dev Front-end e fã de animes', online: false, status: 'pending' },
+            { id: 'rodrigo_m', name: 'Rodrigo Lima', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80', bio: 'Músico nas horas vagas 🎸', online: true, status: 'none' }
+        ];
+
+        // INITIAL POSTS DATA
+        let posts = [
+            {
+                id: 1,
+                author: 'Camila Mendes',
+                authorAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
+                category: 'Tecnologia',
+                timestamp: getBrasiliaFormattedTime(-25),
+                content: 'Acabei de testar o novo modelo de Inteligência Artificial generativa para código! A velocidade de compilação e sugestões de UI é simplesmente inacreditável. O que vocês acham do futuro do dev?',
+                image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80',
+                likes: 42,
+                likedByMe: false,
+                comments: [
+                    { id: 101, author: 'Lucas Silva', text: 'Impressionante! Já estou usando nos meus projetos diários.', time: 'Há 15 min' }
+                ]
+            },
+            {
+                id: 2,
+                author: 'Lucas Silva',
+                authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
+                category: 'Futebol',
+                timestamp: getBrasiliaFormattedTime(-10),
+                content: 'Que rodada espetacular do Campeonato Brasileiro! Golaco nos acréscimos para definir a liderança. Alguém acompanhou o jogo ao vivo?',
+                image: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&auto=format&fit=crop&q=80',
+                likes: 88,
+                likedByMe: true,
+                comments: []
+            }
+        ];
+
+        // INITIAL FEEDBACKS DATA
+        let feedbacks = [
+            { name: 'Gabriel Dev', rating: 5, text: 'A interface em tempo real e o chat funcionam de maneira incrivelmente fluida!', date: 'Hoje' },
+            { name: 'Mariana P.', rating: 4, text: 'Gostei muito dos temas e da opção de customização do perfil.', date: 'Ontem' }
+        ];
+
+        // PRIVATE CHAT MESSAGES LOG STORAGE
+        let chatMessages = {
+            'camila_m': [
+                { sender: 'camila_m', text: 'Oi! Vi seu comentário no post de tecnologia.', time: '10:15' },
+                { sender: 'me', text: 'Legal! O que você acha de trocar umas ideias sobre desenvolvimento?', time: '10:16' }
+            ],
+            'lucas_s': [
+                { sender: 'lucas_s', text: 'E aí! Quem você acha que ganha a partida hoje?', time: '09:30' }
+            ]
+        };
+
+        window.onload = function() {
+            startBrasiliaClock();
+            loadStoredUser();
+            renderTopics();
+            renderTrendingTopics();
+            renderPosts();
+            renderChatContacts();
+            renderPendingInvites();
+            renderFeedbacks();
+            setupAvailableInviteUsers();
+        };
+
+        // ================= BRASILIA CLOCK =================
+        function startBrasiliaClock() {
+            function updateClock() {
+                const now = new Date();
+                // Format in GMT-3 / Brasilia Time
+                const options = { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+                const timeString = new Intl.DateTimeFormat('pt-BR', options).format(now);
+                const clockEl = document.getElementById('clockTime');
+                if (clockEl) clockEl.textContent = `${timeString} (Horário de Brasília)`;
+            }
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+
+        function getBrasiliaFormattedTime(minutesOffset = 0) {
+            const now = new Date(Date.now() + minutesOffset * 60000);
+            const options = { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' };
+            return new Intl.DateTimeFormat('pt-BR', options).format(now) + ' (Brasília)';
+        }
+
+        // ================= USER AUTHENTICATION =================
+        function loadStoredUser() {
+            const stored = localStorage.getItem('nexus_user');
+            if (stored) {
+                currentUser = JSON.parse(stored);
+                document.getElementById('authModal').classList.add('hidden');
+                updateUserProfileUI();
+            } else {
+                document.getElementById('authModal').classList.remove('hidden');
+            }
+        }
+
+        function handleAuth(e) {
+            e.preventDefault();
+            const username = document.getElementById('authUsername').value.trim();
+            if (!username) return;
+
+            currentUser = {
+                username: username,
+                bio: 'Novo membro da comunidade Nexus! 👋',
+                avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username)}`,
+                theme: 'dark',
+                censorship: false
+            };
+
+            localStorage.setItem('nexus_user', JSON.stringify(currentUser));
+            document.getElementById('authModal').classList.add('hidden');
+            updateUserProfileUI();
+        }
+
+        function updateUserProfileUI() {
+            if (!currentUser) return;
+            document.getElementById('headerUsername').textContent = currentUser.username;
+            document.getElementById('headerAvatar').src = currentUser.avatar;
+            document.getElementById('createPostAvatar').src = currentUser.avatar;
+            document.getElementById('profileAvatarPreview').src = currentUser.avatar;
+            document.getElementById('profileBioInput').value = currentUser.bio || '';
+            document.getElementById('censorshipToggle').checked = !!currentUser.censorship;
+            
+            setTheme(currentUser.theme || 'dark');
+        }
+
+        // ================= THEME SYSTEM =================
+        function setTheme(themeMode) {
+            const html = document.documentElement;
+            const customControls = document.getElementById('customThemeControls');
+
+            html.classList.remove('dark', 'theme-custom');
+            if (customControls) customControls.classList.add('hidden');
+
+            if (themeMode === 'dark') {
+                html.classList.add('dark');
+            } else if (themeMode === 'custom') {
+                html.classList.add('theme-custom');
+                if (customControls) customControls.classList.remove('hidden');
+                applyCustomColors();
+            }
+
+            if (currentUser) {
+                currentUser.theme = themeMode;
+                localStorage.setItem('nexus_user', JSON.stringify(currentUser));
+            }
+        }
+
+        function applyCustomColors() {
+            const bgVal = document.getElementById('colorBgPicker').value;
+            const cardVal = document.getElementById('colorCardPicker').value;
+            document.documentElement.style.setProperty('--custom-bg', bgVal);
+            document.documentElement.style.setProperty('--custom-card', cardVal);
+        }
+
+        function toggleCensorshipSetting() {
+            if (currentUser) {
+                currentUser.censorship = document.getElementById('censorshipToggle').checked;
+                localStorage.setItem('nexus_user', JSON.stringify(currentUser));
+                renderPosts();
+            }
+        }
+
+        function openProfileModal() {
+            updateUserProfileUI();
+            toggleModal('profileModal');
+        }
+
+        function updateProfileAvatar(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const base64 = evt.target.result;
+                    document.getElementById('profileAvatarPreview').src = base64;
+                    if (currentUser) currentUser.avatar = base64;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function saveProfileChanges() {
+            if (!currentUser) return;
+            currentUser.bio = document.getElementById('profileBioInput').value.trim();
+            localStorage.setItem('nexus_user', JSON.stringify(currentUser));
+            updateUserProfileUI();
+            toggleModal('profileModal');
+        }
+
+        // ================= TOPICS & SIDEBAR =================
+        function renderTopics() {
+            const container = document.getElementById('topicListContainer');
+            container.innerHTML = `
+                <button onclick="filterByTopic('all')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition ${selectedCategoryFilter === 'all' ? 'bg-brand-500 text-white font-semibold' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60'}">
+                    <span class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-layer-group text-sm"></i> Todos os Tópicos
+                    </span>
+                </button>
+            `;
+
+            topics.forEach(t => {
+                const isSelected = selectedCategoryFilter === t.name;
+                container.innerHTML += `
+                    <button onclick="filterByTopic('${t.name}')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition ${isSelected ? 'bg-brand-500 text-white font-semibold' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60'}">
+                        <span class="flex items-center gap-2.5">
+                            <i class="fa-solid ${t.icon} text-sm ${isSelected ? 'text-white' : 'text-brand-500'}"></i> ${t.name}
+                        </span>
+                        <span class="text-xs px-2 py-0.5 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}">${t.count}</span>
+                    </button>
+                `;
+            });
+        }
+
+        function renderTrendingTopics() {
+            const container = document.getElementById('trendingTopicsContainer');
+            const sorted = [...topics].sort((a,b) => b.count - a.count).slice(0, 3);
+            container.innerHTML = sorted.map(t => `
+                <div onclick="filterByTopic('${t.name}')" class="p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/40 cursor-pointer transition">
+                    <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 flex items-center justify-between">
+                        <span># ${t.name}</span>
+                        <i class="fa-solid fa-arrow-trend-up text-emerald-500 text-xs"></i>
+                    </p>
+                    <p class="text-[10px] text-gray-400 mt-0.5">${t.count} publicações ativas</p>
+                </div>
+            `).join('');
+        }
+
+        function filterByTopic(topicName) {
+            selectedCategoryFilter = topicName;
+            renderTopics();
+            renderPosts();
+        }
+
+        function createTopic() {
+            const title = document.getElementById('newTopicTitle').value.trim();
+            const icon = document.getElementById('newTopicIcon').value.trim() || 'fa-comments';
+            
+            if (!title) return;
+
+            topics.push({
+                id: title.toLowerCase().replace(/\s+/g, '-'),
+                name: title,
+                icon: icon,
+                count: 1
+            });
+
+            document.getElementById('newTopicTitle').value = '';
+            toggleModal('newTopicModal');
+            renderTopics();
+            renderTrendingTopics();
+        }
+
+        // ================= POSTS & FEED =================
+        function handleImageSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    selectedPostImageBase64 = evt.target.result;
+                    document.getElementById('imagePreview').src = selectedPostImageBase64;
+                    document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removeSelectedImage() {
+            selectedPostImageBase64 = null;
+            document.getElementById('postImageInput').value = '';
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+        }
+
+        function createNewPost() {
+            const text = document.getElementById('postContent').value.trim();
+            const category = document.getElementById('postCategorySelect').value;
+
+            if (!text && !selectedPostImageBase64) return;
+
+            const newPost = {
+                id: Date.now(),
+                author: currentUser ? currentUser.username : 'Usuário',
+                authorAvatar: currentUser ? currentUser.avatar : 'https://api.dicebear.com/7.x/bottts/svg?seed=User',
+                category: category,
+                timestamp: getBrasiliaFormattedTime(0),
+                content: text,
+                image: selectedPostImageBase64,
+                likes: 0,
+                likedByMe: false,
+                comments: []
+            };
+
+            posts.unshift(newPost);
+            
+            // Increment topic count
+            const topic = topics.find(t => t.name === category);
+            if (topic) topic.count++;
+
+            // Reset inputs
+            document.getElementById('postContent').value = '';
+            removeSelectedImage();
+
+            renderTopics();
+            renderTrendingTopics();
+            renderPosts();
+        }
+
+        function renderPosts() {
+            const container = document.getElementById('postsContainer');
+            let filtered = posts;
+
+            // Topic filter
+            if (selectedCategoryFilter !== 'all') {
+                filtered = filtered.filter(p => p.category === selectedCategoryFilter);
+            }
+
+            // Search filter
+            const searchVal = document.getElementById('searchInput')?.value.toLowerCase().trim();
+            if (searchVal) {
+                filtered = filtered.filter(p => 
+                    p.content.toLowerCase().includes(searchVal) || 
+                    p.author.toLowerCase().includes(searchVal) || 
+                    p.category.toLowerCase().includes(searchVal)
+                );
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center border border-gray-200 dark:border-gray-700">
+                        <i class="fa-solid fa-folder-open text-4xl text-gray-300 dark:text-gray-600 mb-2"></i>
+                        <p class="text-gray-500 dark:text-gray-400 font-medium">Nenhuma publicação encontrada para este tópico ou busca.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(post => {
+                const isCensored = currentUser?.censorship && (post.content.toLowerCase().includes('nsfw') || post.content.toLowerCase().includes('spoiler'));
+
+                return `
+                    <article class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700/60 transition hover:border-gray-300 dark:hover:border-gray-600">
+                        <!-- Post Header -->
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <img src="${post.authorAvatar}" class="w-10 h-10 rounded-xl bg-gray-100 object-cover">
+                                <div>
+                                    <h4 class="font-bold text-sm text-gray-900 dark:text-white leading-tight">${post.author}</h4>
+                                    <p class="text-xs text-gray-400 flex items-center gap-2 mt-0.5">
+                                        <span>${post.timestamp}</span>
+                                        <span>•</span>
+                                        <span class="bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 px-2 py-0.5 rounded-md font-medium text-[10px]">${post.category}</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <button onclick="sharePost(${post.id})" title="Compartilhar" class="text-gray-400 hover:text-brand-500 transition">
+                                <i class="fa-solid fa-share-nodes text-sm"></i>
+                            </button>
+                        </div>
+
+                        <!-- Post Content -->
+                        <div class="mb-3">
+                            ${isCensored ? `
+                                <div class="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-center text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                    <i class="fa-solid fa-eye-slash mr-1"></i> Conteúdo ocultado pelo Filtro de Censura Ativo.
+                                </div>
+                            ` : `
+                                <p class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-line leading-relaxed">${escapeHtml(post.content)}</p>
+                                ${post.image ? `
+                                    <div class="mt-3 rounded-xl overflow-hidden max-h-96 border border-gray-100 dark:border-gray-700">
+                                        <img src="${post.image}" class="w-full h-full object-cover">
+                                    </div>
+                                ` : ''}
+                            `}
+                        </div>
+
+                        <!-- Post Actions Footer -->
+                        <div class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700/50 text-xs text-gray-500 dark:text-gray-400">
+                            <div class="flex items-center gap-4">
+                                <button onclick="toggleLike(${post.id})" class="flex items-center gap-1.5 transition ${post.likedByMe ? 'text-rose-500 font-semibold' : 'hover:text-rose-500'}">
+                                    <i class="${post.likedByMe ? 'fa-solid' : 'fa-regular'} fa-heart text-base"></i>
+                                    <span>${post.likes}</span>
+                                </button>
+                                <button onclick="toggleComments(${post.id})" class="flex items-center gap-1.5 hover:text-brand-500 transition">
+                                    <i class="fa-regular fa-comment text-base"></i>
+                                    <span>${post.comments.length}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Comments Section -->
+                        <div id="commentsBox-${post.id}" class="hidden mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/40 space-y-3">
+                            <div class="space-y-2 max-h-40 overflow-y-auto pr-1">
+                                ${post.comments.map(c => `
+                                    <div class="bg-gray-50 dark:bg-gray-700/30 p-2.5 rounded-xl text-xs">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <span class="font-bold text-gray-800 dark:text-gray-200">${c.author}</span>
+                                            <span class="text-[10px] text-gray-400">${c.time}</span>
+                                        </div>
+                                        <p class="text-gray-600 dark:text-gray-300">${escapeHtml(c.text)}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <!-- Comment Input -->
+                            <form onsubmit="addComment(event, ${post.id})" class="flex gap-2">
+                                <input type="text" id="commentInput-${post.id}" placeholder="Escreva um comentário..." class="flex-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 border-none rounded-xl text-xs focus:ring-1 focus:ring-brand-500 dark:text-white">
+                                <button type="submit" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl text-xs transition">
+                                    Comentar
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        function toggleLike(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (post) {
+                post.likedByMe = !post.likedByMe;
+                post.likes += post.likedByMe ? 1 : -1;
+                renderPosts();
+            }
+        }
+
+        function toggleComments(postId) {
+            const el = document.getElementById(`commentsBox-${postId}`);
+            if (el) el.classList.toggle('hidden');
+        }
+
+        function addComment(e, postId) {
+            e.preventDefault();
+            const input = document.getElementById(`commentInput-${postId}`);
+            const text = input.value.trim();
+            if (!text) return;
+
+            const post = posts.find(p => p.id === postId);
+            if (post) {
+                post.comments.push({
+                    id: Date.now(),
+                    author: currentUser ? currentUser.username : 'Você',
+                    text: text,
+                    time: getBrasiliaFormattedTime(0)
+                });
+                renderPosts();
+                toggleComments(postId); // Keep open
+            }
+        }
+
+        function filterPostsBySearch() {
+            renderPosts();
+        }
+
+        function filterFeed(type) {
+            document.getElementById('tabAll').className = `flex-1 py-2 rounded-xl font-medium transition text-center ${type === 'all' ? 'bg-brand-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`;
+            document.getElementById('tabRecent').className = `flex-1 py-2 rounded-xl font-medium transition text-center ${type === 'recent' ? 'bg-brand-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`;
+
+            if (type === 'recent') {
+                posts.sort((a,b) => b.id - a.id);
+            } else {
+                posts.sort((a,b) => b.likes - a.likes);
+            }
+            renderPosts();
+        }
+
+        function sharePost(postId) {
+            const dummyUrl = window.location.href;
+            navigator.clipboard.writeText(dummyUrl).then(() => {
+                alert('Link do post copiado para a área de transferência!');
+            }).catch(() => {
+                alert('Link compartilhado com sucesso!');
+            });
+        }
+
+        // ================= PRIVATE CHAT / DM =================
+        function renderChatContacts() {
+            const container = document.getElementById('chatContactsContainer');
+            const acceptedUsers = usersData.filter(u => u.status === 'accepted');
+
+            if (acceptedUsers.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-400 p-2 text-center">Nenhum amigo adicionado no chat.</p>`;
+                return;
+            }
+
+            container.innerHTML = acceptedUsers.map(u => `
+                <div onclick="openChatWith('${u.id}')" class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/50 cursor-pointer transition ${activeChatUserId === u.id ? 'bg-brand-50 dark:bg-brand-900/30 border border-brand-200 dark:border-brand-800' : ''}">
+                    <div class="relative">
+                        <img src="${u.avatar}" class="w-8 h-8 rounded-lg object-cover">
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-gray-800 ${u.online ? 'bg-emerald-500' : 'bg-gray-400'}"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h5 class="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">${u.name}</h5>
+                        <p class="text-[10px] text-gray-400 truncate">${u.bio}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderPendingInvites() {
+            const pending = usersData.filter(u => u.status === 'pending');
+            const container = document.getElementById('pendingInvitesList');
+            const section = document.getElementById('pendingInvitesSection');
+
+            if (pending.length === 0) {
+                section.classList.add('hidden');
+                return;
+            }
+
+            section.classList.remove('hidden');
+            container.innerHTML = pending.map(u => `
+                <div class="flex items-center justify-between bg-white dark:bg-gray-800 p-2 rounded-lg text-xs">
+                    <span class="font-semibold text-gray-700 dark:text-gray-200">${u.name}</span>
+                    <div class="flex gap-1">
+                        <button onclick="acceptInvite('${u.id}')" class="px-2 py-0.5 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition">Aceitar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function setupAvailableInviteUsers() {
+            const container = document.getElementById('availableUsersToInvite');
+            const available = usersData.filter(u => u.status === 'none');
+
+            if (available.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-400 text-center">Todos os usuários disponíveis já foram convidados!</p>`;
+                return;
+            }
+
+            container.innerHTML = available.map(u => `
+                <div class="flex items-center justify-between p-2 rounded-xl bg-gray-50 dark:bg-gray-700/40">
+                    <div class="flex items-center gap-2">
+                        <img src="${u.avatar}" class="w-8 h-8 rounded-lg object-cover">
+                        <div>
+                            <p class="text-xs font-bold text-gray-800 dark:text-gray-200">${u.name}</p>
+                            <p class="text-[10px] text-gray-400">${u.bio}</p>
+                        </div>
+                    </div>
+                    <button onclick="sendInvite('${u.id}')" class="px-3 py-1 bg-brand-600 hover:bg-brand-700 text-white text-xs rounded-lg transition">
+                        Convidar
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function sendInvite(userId) {
+            const u = usersData.find(usr => usr.id === userId);
+            if (u) {
+                u.status = 'pending';
+                alert(`Convite de bate-papo enviado para ${u.name}!`);
+                toggleModal('addContactModal');
+                renderPendingInvites();
+                setupAvailableInviteUsers();
+            }
+        }
+
+        function acceptInvite(userId) {
+            const u = usersData.find(usr => usr.id === userId);
+            if (u) {
+                u.status = 'accepted';
+                if (!chatMessages[userId]) {
+                    chatMessages[userId] = [{ sender: userId, text: 'Olá! Obrigado por aceitar meu convite!', time: getBrasiliaFormattedTime(0) }];
+                }
+                renderPendingInvites();
+                renderChatContacts();
+                openChatWith(userId);
+            }
+        }
+
+        function openChatWith(userId) {
+            activeChatUserId = userId;
+            const user = usersData.find(u => u.id === userId);
+            if (!user) return;
+
+            document.getElementById('chatActiveUser').textContent = user.name;
+            document.getElementById('chatActiveStatus').className = `w-2.5 h-2.5 rounded-full ${user.online ? 'bg-emerald-500' : 'bg-gray-400'}`;
+            document.getElementById('activeChatWindow').classList.remove('hidden');
+
+            renderChatMessages();
+            renderChatContacts();
+        }
+
+        function closeActiveChat() {
+            activeChatUserId = null;
+            document.getElementById('activeChatWindow').classList.add('hidden');
+            renderChatContacts();
+        }
+
+        function renderChatMessages() {
+            if (!activeChatUserId) return;
+            const log = document.getElementById('chatMessagesLog');
+            const msgs = chatMessages[activeChatUserId] || [];
+
+            log.innerHTML = msgs.map(m => {
+                const isMe = m.sender === 'me';
+                return `
+                    <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+                        <div class="p-2 rounded-xl max-w-[85%] ${isMe ? 'bg-brand-600 text-white rounded-br-none' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-none'}">
+                            ${escapeHtml(m.text)}
+                        </div>
+                        <span class="text-[9px] text-gray-400 mt-0.5 px-1">${m.time}</span>
+                    </div>
+                `;
+            }).join('');
+
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function sendPrivateMessage(e) {
+            e.preventDefault();
+            if (!activeChatUserId) return;
+
+            const input = document.getElementById('chatMessageInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            if (!chatMessages[activeChatUserId]) chatMessages[activeChatUserId] = [];
+            
+            chatMessages[activeChatUserId].push({
+                sender: 'me',
+                text: text,
+                time: getBrasiliaFormattedTime(0)
+            });
+
+            input.value = '';
+            renderChatMessages();
+
+            // Auto simulated bot response after 1.5s
+            setTimeout(() => {
+                if (activeChatUserId) {
+                    const responses = [
+                        "Sensacional! Concordo totalmente com o seu ponto de vista.",
+                        "Muito interessante! Vou dar uma olhada nisso mais tarde.",
+                        "Show de bola! Valeu por me avisar aqui no fórum.",
+                        "Legal demais! Vamos trocar mais ideias no feed também."
+                    ];
+                    const randomResp = responses[Math.floor(Math.random() * responses.length)];
+
+                    chatMessages[activeChatUserId].push({
+                        sender: activeChatUserId,
+                        text: randomResp,
+                        time: getBrasiliaFormattedTime(0)
+                    });
+                    renderChatMessages();
+                }
+            }, 1500);
+        }
+
+        // ================= FEEDBACK & REVIEWS =================
+        function selectRating(val) {
+            selectedRatingValue = val;
+            const stars = document.querySelectorAll('#starRatingContainer i');
+            stars.forEach((star, index) => {
+                if (index < val) {
+                    star.className = 'fa-solid fa-star cursor-pointer hover:scale-110 transition text-yellow-400';
+                } else {
+                    star.className = 'fa-regular fa-star cursor-pointer hover:scale-110 transition text-gray-400';
+                }
+            });
+        }
+
+        function submitFeedback() {
+            const text = document.getElementById('feedbackText').value.trim();
+            if (!text) return;
+
+            feedbacks.unshift({
+                name: currentUser ? currentUser.username : 'Anônimo',
+                rating: selectedRatingValue,
+                text: text,
+                date: 'Agora (Brasília)'
+            });
+
+            document.getElementById('feedbackText').value = '';
+            renderFeedbacks();
+            alert('Agradecemos imensamente a sua avaliação!');
+        }
+
+        function renderFeedbacks() {
+            const container = document.getElementById('feedbackList');
+            container.innerHTML = feedbacks.map(f => `
+                <div class="p-2.5 bg-gray-50 dark:bg-gray-700/40 rounded-xl text-xs space-y-1">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-gray-800 dark:text-gray-200">${f.name}</span>
+                        <div class="text-yellow-400 text-[10px]">
+                            ${'<i class="fa-solid fa-star"></i>'.repeat(f.rating)}
+                        </div>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-300">${escapeHtml(f.text)}</p>
+                    <p class="text-[9px] text-gray-400 text-right">${f.date}</p>
+                </div>
+            `).join('');
+        }
+
+        // ================= UTILS & MODAL HELPERS =================
+        function toggleModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.classList.toggle('hidden');
+        }
+
+        function switchView(viewName) {
+            if (viewName === 'feed') {
+                selectedCategoryFilter = 'all';
+                renderTopics();
+                renderPosts();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;")
+                      .replace(/</g, "&lt;")
+                      .replace(/>/g, "&gt;")
+                      .replace(/"/g, "&quot;")
+                      .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
